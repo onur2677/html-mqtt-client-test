@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.2.6/mqtt.min.js"
+        integrity="sha512-DD/bXhp28PWFubyhBKR7vt5FUMRCbEJ8KtC4Oq/MTWniMUytsPM5pFDaUTaHDRd7zC8cHpKvv6FaUI2OP/czlw=="
+        crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <form id="connection">
+        <p>
+            Panel Id <input type="number" id="panel-id">
+        </p>
+        <p>
+            <input type="submit" value="Connect">
+        </p>
+    </form>
+
+    <form id="data-send" style="display:none">
+        <p>
+            Data <input type="text" id="data">
+        </p>
+        <p>
+            <input type="submit" value="Send">
+        </p>
+        <ul id="messages">
+
+        </ul>
+    </form>
+
+    <script>
+        const BROKER_URL = 'test.mosquitto.org:8081'
+        const panelId = document.querySelector('#panel-id')
+        const data = document.querySelector('#data')
+        const messages = document.querySelector('#messages')
+        const dataSendForm = document.querySelector('#data-send')
+        const connectionForm = document.querySelector('#connection')
+
+        let client
+        let PANEL_ID
+
+        connectionForm.onsubmit = e => {
+            e.preventDefault()
+
+            PANEL_ID = panelId.value
+
+            client = mqtt.connect('wss://' + BROKER_URL)
+
+            client.on('connect', function () {
+                console.log('CONNECTED')
+                client.subscribe('panel-' + PANEL_ID)
+            })
+
+            client.on('message', function (topic, message) {
+                // message is Buffer
+                console.log(message.toString())
+
+                const messageUI = document.createElement('li')
+                messageUI.textContent = message.toString()
+                messages.insertAdjacentElement('beforeend', messageUI)
+            })
+
+            dataSendForm.style.display = 'block'
+            connectionForm.style.display = 'none'
+        }
+
+        dataSendForm.onsubmit = e => {
+            e.preventDefault()
+            client.publish('mobile-' + PANEL_ID, data.value)
+        }
+    </script>
+</body>
+
+</html>
